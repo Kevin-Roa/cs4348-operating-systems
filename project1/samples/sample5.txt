@@ -1,0 +1,131 @@
+1   // Print characters at memory addr 71-118
+0
+14
+4
+71
+21 
+12
+9
+2
+25
+20
+3
+1 
+10
+9
+2
+
+1   // Load 0
+0
+14  // Store 0 in X
+9   // Print X 
+1
+1   // Load new line
+10
+9   // Print new line
+2
+
+1   // Load 1
+1
+16  // Store 1 in Y
+9   // Print Y
+1
+1   // Load new line
+10
+9   // Print new line
+2
+
+1   // Load 18 (counter)
+18  // 20 (2+18) digits of fibonacci sequence
+7   // Store counter at bottom of user stack
+0
+
+1   // Loop Start
+0   // Load 0 into AC
+10  // Add X to AC
+11  // Add Y to AC
+27  // Store sum in stack
+9   // Print sum
+1
+17  // Store Y in AC
+14  // Set X to Y
+28  // Pop sum from stack
+16  // Set Y to sum
+1   // Load new line
+10
+9   // Print new line
+2
+
+15  // Store X in AC
+27  // Push X to stack
+2   // Get counter value
+0
+14  // Put counter in X
+26  // Lower counter
+15  // Put counter in AC
+7   // Store counter value
+0
+
+28  // Pop X from stack
+14  // Set X back
+
+2   // Load counter into AC
+0
+21  // If counter is 0, jump to end
+70
+20  // Else, jump to Loop Start
+38
+
+50  // End
+
+67  // "Calc first twenty values of Fibonacci Sequence:"
+97 
+108 
+99 
+32 
+102 
+105 
+114 
+115 
+116 
+32 
+116 
+119 
+101 
+110 
+116 
+121 
+32 
+118 
+97 
+108 
+117 
+101 
+115 
+32 
+111 
+102 
+32 
+70 
+105 
+98 
+111 
+110 
+97 
+99 
+99 
+105 
+32 
+83 
+101 
+113 
+117 
+101 
+110 
+99 
+101 
+58
+0
+
+.1000 // Interrupt handler
+30

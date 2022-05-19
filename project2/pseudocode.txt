@@ -1,0 +1,202 @@
+sem boxAgents            = {2} // num avail box office agents
+sem ticketTakers         = {1} // num avail ticket takers
+sem concessions          = {1} // num avail concession stand workers
+ 
+sem custAtBox            = {0} // signal the customer to be handled at the box office
+sem custAtTicket         = {0} // signal the customer to be handled at the ticket booth
+sem custAtConc           = {0} // signal the customer to be handled at the concessiton stand
+
+sem finishedAtBox[50]    = {0} // track which customer has left the box office
+sem finishedAtTicket[50] = {0} // track which customer has left the ticket booth
+sem finishedAtConc[50]   = {0} // track which customer has left the concession stand
+
+sem custMutex1           = {1} // mutex for assigning ids to each customer
+sem custMutex2           = {1} // mutex for enqueuing the customer in the box office
+sem custMutex3           = {1} // mutex for enqueuing the customer in the ticket booth
+sem custMutex4           = {1} // mutex for enqueuing the customer in the concession stand
+sem boxMutex1            = {1} // mutex for assigning ids to each box office agent
+sem boxMutex2            = {1} // mutex for dequeuing customers at the box office
+sem boxMutex3            = {1} // mutex for buying a ticket at the box office
+sem ticketMutex1         = {1} // mutex for assigning ids to each ticket taker
+sem ticketMutex2         = {1} // mutex for dequeuing customers at the ticket booth
+sem concMutex1           = {1} // mutex for assigning ids to each concession stand worker
+sem concMutex2           = {1} // mutex for dequeuing customers at the concession stand
+
+string custMovie[50]           // movie the customer has selected
+string custFood[50]            // food the customer has selected
+boolean shouldLeave[50]        // track if the customer should exit the theater
+
+queue<int> boxQ                // queue for customers in line at box office
+queue<int> ticketQ             // queue for customers in line at ticket booth
+queue<int> concQ               // queue for customers in line at concession stand
+
+map<string, int> movies        // <moviename, # seats>
+
+main() {
+  // Create threads
+  createboxoffices(2)
+  createtickettakers(1)
+  createconcessions(1)
+  print("theater is open")
+
+  createcustomers(50)
+
+  // Wait for all customers to terminate
+  join(customers * 50)
+  exit()
+}
+
+customer() {
+  static int count
+  int custId
+
+  // Assign Id
+  wait(custMutex1)
+  custId = count
+  count++
+  signal(custMutex1)
+
+  // Box Office
+  wait(boxAgents)
+  custMovie[custId] = movies[rand()]
+  wait(custMutex2)
+  print("customer {id} created, buying ticket to {custMovie[custId]}")
+  boxQ.enqueue(custId)
+  signal(custAtBox)
+  signal(custMutex2)
+  wait(finishedAtBox[custId])
+  if(shouldLeave[custid]) {
+    exit("joined customer {custId}")
+  }
+  signal(boxAgents)
+
+  // Ticket booth
+  wait(ticketTaker)
+  wait(custMutex3)
+  print("customer {custId} in line to see ticket taker")
+  ticketQ.enqueue(custId)
+  signal(custAtTicket)
+  signal(custMutex3)
+  wait(finishedAtTicket[custId])
+  signal(ticketTaker)
+
+  // Concession stand
+  bool visitConc = rand(50%)
+  if(visitConc) {
+    wait(concession)
+    string food = rand(33%)
+    custFood[custId] = food
+    wait(custMutex4)
+    print("customer {custId} in line to buy {food}")
+    concQ.enqueue(custId)
+    signal(custAtConc)
+    signal(custMutex4)
+    wait(finishedAtConc[custId])
+    print("customer {custId} receives {food}")
+    signal(concession)
+  }
+
+  // Watch movie
+  print("customer {custId} enters theater to see {movie[custId]}")
+
+  // Leave theater
+  exit("joined customer {custId}")
+}
+
+boxoffice() {
+  static int count
+  int custId
+  int agentId
+  static map<string, int> sold // <movie, # tickets sold>
+
+  // Assign Id
+  wait(boxMutex1)
+  agentId = count
+  count++
+  signal(boxMutex1)
+  print("box office agent {agentId} created")
+
+  while(true) {
+    wait(custAtBox)
+
+    // get customer
+    wait(boxMutex2)
+    custId = boxQ.dequeue()
+    signal(boxMutex2)
+
+    print("box office agent {agentId} serving customer {custId}")
+
+    // buy ticket
+    cm = custMovie[custId]
+    wait(boxMutex3)
+    sleep(90)
+    if(movies[cm] - sold[cm] > 0)
+      custMovie[custId] = cm
+      sold[cm]++
+      print("box office agent {agentId} sold ticket for {cm} to customer {custId}")
+    else {
+      print("box office agent {agentid} tells customer {custId} that tickets to {cm} are sold out")
+      shouldLeave[custId] = true
+    }
+    signal(boxMutex3)
+
+    signal(finishedAtBox[custId])
+  }
+}
+
+tickettaker() {
+  static int count
+  int custId
+  int takerId
+
+  // Assign Id
+  wait(boxMutex1)
+  agentId = count
+  count++
+  signal(boxMutex1)
+  print("ticket taker {takerId} created")
+
+  while(true) {
+    wait(custAtTicket)
+
+    // get customer
+    wait(ticketMutex2)
+    custId = ticketQ.dequeue()
+    signal(ticketMutex2)
+
+    // tear ticket
+    print("ticket taker {takerId} takes customer {custId}'s ticket")
+    sleep(15)
+
+    signal(finishedAtTicket[custId])
+  }
+}
+
+concession() {
+  static int count
+  int custId
+  int concId
+
+  // Assign Id
+  wait(concMutex1)
+  agentId = count
+  count++
+  signal(concMutex1)
+  print("concession stand worker {concId} created")
+
+  while(true) {
+    wait(custAtConc)
+
+    // get customer
+    wait(concessionMutex2)
+    custId = concQ.dequeue()
+    signal(concessionMutex2)
+
+    // Handle order
+    print("concession stand worker {concId} takes order for {custFood[custId]} from customer {custId}")
+    sleep(180)
+    print("concession stand worker {concId} gives {custFood[custId]} to customer {custId}")
+
+    signal(finishedAtConc[custId])
+  }
+}
